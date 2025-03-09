@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "AI Dictionary+",
+  "version": "1.0.0",
+  "description": "Get context-aware AI-generated explanations of any text you highlight",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "AI Dictionary+"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["content.css"]
+    }
+  ],
+  "permissions": ["storage", "contextMenus"],
+  "host_permissions": [
+    "https://generativelanguage.googleapis.com/",
+    "https://api.perplexity.ai/"
+  ],
+  "options_page": "options.html",
+  "web_accessible_resources": [
+    {
+      "resources": ["chat.html", "icons/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
