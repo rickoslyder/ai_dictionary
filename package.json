@@ -17,22 +17,40 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@tailwindcss/postcss7-compat": "^2.2.17",
     "@types/chrome": "^0.0.254",
     "@types/marked": "^5.0.2",
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
+    "autoprefixer": "^10.4.21",
     "copy-webpack-plugin": "^12.0.2",
     "css-loader": "^6.10.0",
     "html-webpack-plugin": "^5.6.0",
+    "postcss": "^8.5.3",
+    "postcss-loader": "^8.1.1",
     "style-loader": "^3.3.4",
+    "tailwindcss": "^4.0.12",
+    "tailwindcss-animate": "^1.0.7",
     "ts-loader": "^9.5.1",
     "typescript": "^5.3.3",
     "webpack": "^5.90.1",
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^1.2.1",
+    "@assistant-ui/react": "^0.8.4",
+    "@assistant-ui/react-ai-sdk": "^0.8.0",
+    "@assistant-ui/react-markdown": "^0.8.0",
+    "@radix-ui/react-slot": "^1.1.2",
+    "@radix-ui/react-tooltip": "^1.1.8",
+    "ai": "^4.1.54",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.479.0",
     "marked": "^9.1.6",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "remark-gfm": "^4.0.1",
+    "tailwind-merge": "^3.0.2"
   }
 }

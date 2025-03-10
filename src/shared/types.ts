@@ -23,7 +23,7 @@ export const DEFAULT_SETTINGS: Settings = {
   apiKey: "",
   perplexityApiKey: "",
   theme: "auto",
-  maxTokens: 1000,
+  maxTokens: 2000,
   cacheEnabled: true,
   cacheExpiry: 24,
   webSearchEnabled: true,
@@ -61,6 +61,7 @@ export interface ExplainTextRequest {
   text: string;
   contextText?: string; // Optional surrounding text for context
   tabId?: number;
+  skipCache?: boolean; // Flag to bypass cache for regeneration
 }
 
 // Structure for a web search request

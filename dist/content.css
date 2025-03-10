@@ -364,3 +364,104 @@
 .dark-theme .ai-dictionary-citations a {
   color: #729fe3;
 }
+
+/* Copy button styles */
+.ai-dictionary-copy-container {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.ai-dictionary-copy-button {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  color: #777;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.ai-dictionary-copy-button:hover {
+  background-color: #f1f3f4;
+  color: #4285f4;
+}
+
+.dark-theme .ai-dictionary-copy-button {
+  color: #a1a1a6;
+}
+
+.dark-theme .ai-dictionary-copy-button:hover {
+  background-color: #3d3d41;
+  color: #8ab4f8;
+}
+
+/* Tooltip for "Copied!" message */
+.ai-dictionary-tooltip-text {
+  visibility: hidden;
+  width: 60px;
+  background-color: #555;
+  color: #fff;
+  text-align: center;
+  border-radius: 4px;
+  padding: 4px 8px;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -30px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 12px;
+}
+
+.ai-dictionary-tooltip-text::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #555 transparent transparent transparent;
+}
+
+.ai-dictionary-tooltip-text.show {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Regenerate button */
+.ai-dictionary-regenerate {
+  background-color: #9c27b0; /* Purple to distinguish it from other buttons */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: background-color 0.2s;
+}
+
+.ai-dictionary-regenerate:hover {
+  background-color: #7b1fa2; /* Darker purple on hover */
+}
+
+.dark-theme .ai-dictionary-regenerate {
+  background-color: #bb86fc; /* Light purple in dark mode */
+  color: #121212;
+}
+
+.dark-theme .ai-dictionary-regenerate:hover {
+  background-color: #9965c9; /* Slightly darker on hover */
+}

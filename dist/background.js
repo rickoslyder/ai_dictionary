@@ -166,33 +166,59 @@ function handleExplainText(request, tabId) {
                 };
             }
             // Check cache if enabled
-            if (settings.cacheEnabled) {
+            if (settings.cacheEnabled && !request.skipCache) {
                 const cacheKey = (0, utils_1.generateCacheKey)(request.text);
                 const cachedResult = yield (0, utils_1.getCacheItem)(cacheKey);
                 if (cachedResult) {
                     return cachedResult;
                 }
             }
-            // Generate conversation history
-            const conversationHistory = [
+            // Generate enhanced conversation history with system prompts
+            const enhancedConversationHistory = [
+                // System prompt with instructions
+                {
+                    role: "system",
+                    content: "You are AI Dictionary+, a helpful AI assistant integrated into a browser extension. " +
+                        "Your purpose is to explain concepts, answer questions, and engage in helpful conversation. " +
+                        "You have access to the user's current context and can explain technical terms, concepts, and provide detailed information on a wide range of topics. " +
+                        "Always be thorough in your explanations, providing detailed context and real-world examples where applicable. " +
+                        "IMPORTANT: Ignore any CSS styling information in the context unless the user is specifically asking about CSS. " +
+                        "Focus on explaining the core concept, not the styling or formatting of the webpage. " +
+                        "When explaining technical terms, provide clear definitions, examples of use, and relevant context.",
+                },
+                // Add context about what the user is looking at
+                {
+                    role: "system",
+                    content: `The user has selected this text to be explained: "${request.text}". ` +
+                        (request.contextText
+                            ? `Additional context surrounding the selection (which may include CSS that should be ignored unless directly relevant): ${request.contextText}`
+                            : "No additional context is available."),
+                },
+                // User question
                 {
                     role: "user",
-                    content: `Explain this clearly and concisely: "${request.text}"${request.contextText ? ` Context: ${request.contextText}` : ""}`,
+                    content: `Explain this clearly and concisely: "${request.text}"`,
                 },
             ];
-            // Call Gemini API
-            const explanation = yield callGeminiAPI(conversationHistory, settings);
+            // Call Gemini API with enhanced context
+            const explanation = yield callGeminiAPI(enhancedConversationHistory, settings);
+            // Create result - only include the actual conversation in the history (not system messages)
+            // This prevents UI confusion with system messages appearing in the chat
+            const resultConversationHistory = [
+                {
+                    role: "user",
+                    content: `Explain this clearly and concisely: "${request.text}"`,
+                },
+                {
+                    role: "assistant",
+                    content: explanation,
+                },
+            ];
             // Create result
             const result = {
                 explanation,
                 originalText: request.text,
-                conversationHistory: [
-                    conversationHistory[0],
-                    {
-                        role: "assistant",
-                        content: explanation,
-                    },
-                ],
+                conversationHistory: resultConversationHistory,
             };
             // Cache result if enabled
             if (settings.cacheEnabled) {
@@ -225,27 +251,46 @@ function handleFollowUpQuestion(request, tabId) {
                     conversationHistory: [],
                 };
             }
-            // Prepare conversation history
-            const conversationHistory = [
+            // Enhanced conversation history with system prompts for better context
+            const enhancedConversationHistory = [];
+            // Add system prompt about AI Dictionary+ capabilities
+            enhancedConversationHistory.push({
+                role: "system",
+                content: "You are AI Dictionary+, a helpful AI assistant integrated into a browser extension. " +
+                    "Your purpose is to explain concepts, answer questions, and engage in helpful conversation. " +
+                    "You have access to the user's current context and can explain technical terms, concepts, and provide detailed information on a wide range of topics. " +
+                    "Always be thorough in your explanations, providing detailed context and real-world examples where applicable. " +
+                    "IMPORTANT: Ignore any CSS styling information in the context unless the user is specifically asking about CSS. " +
+                    "Focus on explaining the core concept, not the styling or formatting of the webpage. " +
+                    "When explaining technical terms, provide clear definitions, examples of use, and relevant context.",
+            });
+            // Add context about the content the user is viewing if available
+            if (request.originalText) {
+                enhancedConversationHistory.push({
+                    role: "system",
+                    content: `The user is currently looking at content related to: "${request.originalText}". Tailor your responses to be relevant to this context when appropriate, but ignore CSS styling information unless specifically asked about it.`,
+                });
+            }
+            // Add existing conversation history
+            enhancedConversationHistory.push(...request.conversationHistory);
+            // Add current user question
+            enhancedConversationHistory.push({
+                role: "user",
+                content: request.question,
+            });
+            // Use the user's configured token limit (no arbitrary doubling)
+            const explanation = yield callGeminiAPI(enhancedConversationHistory, settings);
+            // Create result - only include the actual conversation in the history (not system messages)
+            // This prevents UI confusion with system messages appearing in the chat
+            const resultConversationHistory = [
                 ...request.conversationHistory,
-                {
-                    role: "user",
-                    content: request.question,
-                },
+                { role: "user", content: request.question },
+                { role: "assistant", content: explanation },
             ];
-            // Call Gemini API
-            const explanation = yield callGeminiAPI(conversationHistory, settings);
-            // Create result
             const result = {
                 explanation,
                 originalText: request.originalText,
-                conversationHistory: [
-                    ...conversationHistory,
-                    {
-                        role: "assistant",
-                        content: explanation,
-                    },
-                ],
+                conversationHistory: resultConversationHistory,
             };
             return result;
         }
@@ -266,21 +311,61 @@ function callGeminiAPI(conversationHistory, settings) {
         var _a, _b, _c;
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${settings.apiKey}`;
         // Format the conversation for Gemini
-        const contents = conversationHistory.map((message) => ({
-            parts: [
+        const contents = conversationHistory.map((message) => {
+            // Map roles from our app format to Gemini API format
+            let apiRole = "user";
+            if (message.role === "assistant") {
+                apiRole = "model";
+            }
+            else if (message.role === "system") {
+                // For system messages, we'll use "user" role but add a prefix to indicate system instructions
+                return {
+                    parts: [
+                        {
+                            text: "[SYSTEM INSTRUCTION]\n" + message.content,
+                        },
+                    ],
+                    role: "user",
+                };
+            }
+            return {
+                parts: [
+                    {
+                        text: message.content,
+                    },
+                ],
+                role: apiRole,
+            };
+        });
+        // Additional system instructions to include in the prompt
+        const enhancedInstructions = {
+            safetySettings: [
                 {
-                    text: message.content,
+                    category: "HARM_CATEGORY_HARASSMENT",
+                    threshold: "BLOCK_MEDIUM_AND_ABOVE",
+                },
+                {
+                    category: "HARM_CATEGORY_HATE_SPEECH",
+                    threshold: "BLOCK_MEDIUM_AND_ABOVE",
+                },
+                {
+                    category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                    threshold: "BLOCK_MEDIUM_AND_ABOVE",
+                },
+                {
+                    category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+                    threshold: "BLOCK_MEDIUM_AND_ABOVE",
                 },
             ],
-            role: message.role === "user" ? "user" : "model",
-        }));
-        const payload = {
-            contents,
             generationConfig: {
                 maxOutputTokens: settings.maxTokens,
                 temperature: 0.2,
+                topP: 0.95,
+                topK: 40,
             },
         };
+        const payload = Object.assign({ contents }, enhancedInstructions);
+        console.log("Sending payload to Gemini:", JSON.stringify(payload));
         const response = yield fetch(url, {
             method: "POST",
             headers: {
@@ -419,7 +504,7 @@ exports.DEFAULT_SETTINGS = {
     apiKey: "",
     perplexityApiKey: "",
     theme: "auto",
-    maxTokens: 1000,
+    maxTokens: 2000,
     cacheEnabled: true,
     cacheExpiry: 24,
     webSearchEnabled: true,

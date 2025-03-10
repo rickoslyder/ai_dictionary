@@ -54,10 +54,37 @@ function setupEventListeners() {
     // Chat button
     const chatBtn = document.getElementById('chatBtn');
     if (chatBtn) {
-        chatBtn.addEventListener('click', (e) => {
+        chatBtn.addEventListener('click', async (e) => {
             e.preventDefault();
-            const chatUrl = chrome.runtime.getURL('chat.html');
-            chrome.tabs.create({ url: chatUrl });
+
+            // Get active tab info to provide context
+            const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (tabs.length > 0) {
+                const activeTab = tabs[0];
+
+                // Create chat data with context from active tab
+                const chatData = {
+                    originalText: activeTab.title || 'Current page',
+                    conversationHistory: []
+                };
+
+                // Encode data to pass via URL
+                const encodedData = encodeURIComponent(JSON.stringify(chatData));
+                const chatUrl = chrome.runtime.getURL(`chat.html?data=${encodedData}`);
+
+                // Notify background script (optional, for future use)
+                chrome.runtime.sendMessage({
+                    type: MessageType.OPEN_CHAT,
+                    payload: chatData,
+                });
+
+                // Open chat in new tab
+                chrome.tabs.create({ url: chatUrl });
+            } else {
+                // Fallback if no active tab
+                const chatUrl = chrome.runtime.getURL('chat.html');
+                chrome.tabs.create({ url: chatUrl });
+            }
         });
     }
 } 

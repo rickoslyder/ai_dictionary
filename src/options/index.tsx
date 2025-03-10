@@ -212,11 +212,11 @@ const OptionsPage: React.FC = () => {
                         value={settings.maxTokens}
                         onChange={handleInputChange}
                         min="100"
-                        max="2000"
+                        max="4000"
                         step="100"
                     />
                     <div className="description">
-                        Maximum number of tokens for AI responses (100-2000).
+                        Maximum number of tokens for AI responses (100-4000). Higher values allow for longer, more detailed responses but may take longer to generate.
                     </div>
                 </div>
 

@@ -233,29 +233,49 @@ function handleExplainRequest(text: string) {
   );
 }
 
-// Get some surrounding context for the selected text
+// Get enhanced surrounding context for the selected text
 function getContextText(selectedText: string): string | undefined {
-  // Try to find the selected text in the document
-  const textNodes = [
-    ...document.querySelectorAll("p, h1, h2, h3, h4, h5, h6, li, div, span"),
-  ].filter(
-    (node) => node.textContent && node.textContent.includes(selectedText)
-  );
+  try {
+    // Try to find the selected text in the document with broader selectors
+    const textNodes = [
+      ...document.querySelectorAll(
+        "p, h1, h2, h3, h4, h5, h6, li, div, span, article, section"
+      ),
+    ].filter(
+      (node) => node.textContent && node.textContent.includes(selectedText)
+    );
 
-  if (textNodes.length > 0) {
+    if (textNodes.length === 0) {
+      return undefined;
+    }
+
     // Use the first matching element as context
     const contextNode = textNodes[0];
     const fullText = contextNode.textContent || "";
 
-    // Return some surrounding context, but not too much
-    if (fullText.length > selectedText.length * 3) {
-      return fullText.substring(0, 500); // Limit context size
+    // Also get context from the parent element if available
+    let parentText = "";
+    const parentNode = contextNode.parentElement;
+    if (parentNode && parentNode.textContent) {
+      parentText = parentNode.textContent;
     }
 
-    return fullText;
-  }
+    // Use the longer text between the element's text and its parent's text
+    let contextText = fullText;
+    if (parentText.length > fullText.length && parentText.length < 5000) {
+      contextText = parentText;
+    }
 
-  return undefined;
+    // Return surrounding context, doubling the limit from 500 to 1000 characters
+    if (contextText.length > 1000) {
+      return contextText.substring(0, 1000); // Double the previous limit of 500
+    }
+
+    return contextText;
+  } catch (error) {
+    console.error("Error getting context text:", error);
+    return selectedText; // Fallback to just the selected text
+  }
 }
 
 // Create the tooltip element
@@ -427,6 +447,55 @@ function showExplanation(result: ExplanationResult, tooltip?: HTMLElement) {
     explanationText.textContent = result.explanation;
   }
 
+  // Add copy button
+  const copyButtonContainer = document.createElement("div");
+  copyButtonContainer.className = "ai-dictionary-copy-container";
+
+  const copyButton = document.createElement("button");
+  copyButton.className = "ai-dictionary-copy-button";
+  copyButton.title = "Copy explanation to clipboard";
+  copyButton.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+    </svg>
+  `;
+
+  // Add tooltip text that shows on hover
+  const tooltipText = document.createElement("span");
+  tooltipText.className = "ai-dictionary-tooltip-text";
+  tooltipText.textContent = "Copied!";
+  copyButton.appendChild(tooltipText);
+
+  // Add click event to copy the explanation text
+  copyButton.addEventListener("click", () => {
+    // Create a temporary textarea to hold the text
+    const textarea = document.createElement("textarea");
+    textarea.value = result.explanation;
+    document.body.appendChild(textarea);
+    textarea.select();
+
+    try {
+      // Copy the text
+      document.execCommand("copy");
+
+      // Show the copied tooltip
+      tooltipText.classList.add("show");
+
+      // Hide the tooltip after 2 seconds
+      setTimeout(() => {
+        tooltipText.classList.remove("show");
+      }, 2000);
+    } catch (err) {
+      console.error("Error copying text:", err);
+    } finally {
+      document.body.removeChild(textarea);
+    }
+  });
+
+  copyButtonContainer.appendChild(copyButton);
+  explanationText.appendChild(copyButtonContainer);
+
   content.appendChild(explanationText);
 
   // Add citations if available
@@ -518,6 +587,19 @@ function showExplanation(result: ExplanationResult, tooltip?: HTMLElement) {
   });
   buttons.appendChild(chatButton);
 
+  // Add regenerate button
+  const regenerateButton = document.createElement("button");
+  regenerateButton.className = "ai-dictionary-regenerate";
+  regenerateButton.textContent = "Regenerate";
+  regenerateButton.title = "Get a fresh explanation (bypass cache)";
+  regenerateButton.addEventListener("click", () => {
+    handleRegenerateExplanation(
+      result.originalText,
+      getContextText(result.originalText)
+    );
+  });
+  buttons.appendChild(regenerateButton);
+
   followUp.appendChild(buttons);
 
   // Add event listener for enter key
@@ -576,23 +658,26 @@ function handleFollowUpQuestion(question: string, tooltip: HTMLElement) {
   );
 }
 
-// Open the chat page
+// Open the chat page with the current conversation context
 function openChatPage() {
-  const chatUrl = chrome.runtime.getURL("chat.html");
+  // Prepare data to send to the chat page
+  const chatData = {
+    originalText: activeText,
+    conversationHistory: activeConversationHistory,
+  };
 
-  // Open a new tab with the chat page
-  chrome.runtime.sendMessage(
-    {
-      type: MessageType.OPEN_CHAT,
-      payload: {
-        originalText: activeText,
-        conversationHistory: activeConversationHistory,
-      },
-    },
-    () => {
-      window.open(chatUrl, "_blank");
-    }
-  );
+  // Encode the data for URL transmission
+  const encodedData = encodeURIComponent(JSON.stringify(chatData));
+  const chatUrl = chrome.runtime.getURL(`chat.html?data=${encodedData}`);
+
+  // Notify the background script (useful for future features)
+  chrome.runtime.sendMessage({
+    type: MessageType.OPEN_CHAT,
+    payload: chatData,
+  });
+
+  // Open the chat in a new tab using window.open() which is available in content scripts
+  window.open(chatUrl, "_blank");
 }
 
 // Remove the tooltip
@@ -656,6 +741,52 @@ function handleWebSearch(originalText: string, originalExplanation: string) {
 function showWebSearchResult(result: ExplanationResult): void {
   // Just use the existing showExplanation function
   showExplanation(result);
+}
+
+// Function to regenerate explanation without using the cache
+function handleRegenerateExplanation(
+  originalText: string,
+  contextText: string | undefined
+) {
+  // Create loading tooltip
+  const tooltip = createTooltip(originalText);
+
+  // Make the tooltip very visible
+  tooltip.style.border = "2px solid #4285f4";
+  tooltip.style.boxShadow = "0 4px 20px rgba(0, 0, 0, 0.3)";
+
+  showLoadingState(tooltip);
+
+  // Send request to background script with skipCache flag
+  console.log("Sending regenerate request to background script");
+  chrome.runtime.sendMessage(
+    {
+      type: MessageType.EXPLAIN_TEXT,
+      payload: {
+        text: originalText,
+        contextText: contextText,
+        skipCache: true, // Skip cache to get a fresh explanation
+      },
+    },
+    (response: ExplanationResult) => {
+      console.log("Received response from background script:", response);
+      if (chrome.runtime.lastError) {
+        console.error("Error sending message:", chrome.runtime.lastError);
+        showError(tooltip, "Error communicating with the extension.");
+        return;
+      }
+
+      if (response.error) {
+        console.error("Error in response:", response.error);
+        showError(tooltip, response.error);
+        return;
+      }
+
+      console.log("Showing regenerated explanation in tooltip");
+      // Update UI with explanation
+      showExplanation(response, tooltip);
+    }
+  );
 }
 
 // Call init() after all functions are defined

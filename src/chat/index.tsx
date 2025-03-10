@@ -8,21 +8,18 @@ import {
     ExplanationResult
 } from '../shared/types';
 import { getSettings, getTheme } from '../shared/utils';
+import {
+    ThreadPrimitive,
+} from '@assistant-ui/react';
+import { ChatProvider } from '../components/chat/chat-provider';
 import { marked } from 'marked';
+import '../globals.css';
 
-// Configure marked options
+// Initialize marked options for security
 marked.setOptions({
-    breaks: true,
-    gfm: true,
+    breaks: true, // Convert \n to <br>
+    gfm: true, // GitHub Flavored Markdown
 });
-
-interface ChatState {
-    messages: ConversationMessage[];
-    originalText: string;
-    inputText: string;
-    isLoading: boolean;
-    error: string | null;
-}
 
 // Function to safely parse markdown
 const renderMarkdown = (content: string): string => {
@@ -34,43 +31,25 @@ const renderMarkdown = (content: string): string => {
     }
 };
 
+interface ChatState {
+    messages: ConversationMessage[];
+    originalText: string;
+    error: string | null;
+    loading: boolean;
+}
+
 const ChatPage: React.FC = () => {
     const [chatState, setChatState] = useState<ChatState>({
         messages: [],
         originalText: '',
-        inputText: '',
-        isLoading: false,
         error: null,
+        loading: false,
     });
-
-    const chatContainerRef = useRef<HTMLDivElement>(null);
 
     // Load conversation on mount
     useEffect(() => {
         loadConversation();
         applyTheme();
-    }, []);
-
-    // Scroll to bottom when messages change
-    useEffect(() => {
-        scrollToBottom();
-    }, [chatState.messages]);
-
-    // Auto-resize textarea
-    useEffect(() => {
-        const textarea = document.getElementById('inputField') as HTMLTextAreaElement;
-        if (textarea) {
-            const resizeTextarea = () => {
-                // Reset height temporarily to get the correct scrollHeight
-                textarea.style.height = 'auto';
-                // Set to scrollHeight
-                const maxHeight = 120;
-                textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`;
-            };
-
-            textarea.addEventListener('input', resizeTextarea);
-            return () => textarea.removeEventListener('input', resizeTextarea);
-        }
     }, []);
 
     // Apply theme based on settings
@@ -79,9 +58,9 @@ const ChatPage: React.FC = () => {
         const theme = getTheme(settings);
 
         if (theme === 'dark') {
-            document.body.classList.add('dark-theme');
+            document.body.classList.add('dark');
         } else {
-            document.body.classList.remove('dark-theme');
+            document.body.classList.remove('dark');
         }
     };
 
@@ -110,109 +89,73 @@ const ChatPage: React.FC = () => {
         }
     };
 
-    // Scroll chat to bottom
-    const scrollToBottom = () => {
-        if (chatContainerRef.current) {
-            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-        }
-    };
+    // Handle sending a new message
+    const handleSendMessage = async (message: string) => {
+        if (!message.trim()) return;
 
-    // Handle sending a message
-    const handleSendMessage = async () => {
-        if (!chatState.inputText.trim() || chatState.isLoading) return;
-
-        const newMessage: ConversationMessage = {
+        // Create a user message
+        const userMessage: ConversationMessage = {
             role: 'user',
-            content: chatState.inputText.trim(),
+            content: message
         };
 
-        // Add user message to chat
-        setChatState((prev) => ({
+        // Add user message to the chat state
+        setChatState(prev => ({
             ...prev,
-            messages: [...prev.messages, newMessage],
-            inputText: '',
-            isLoading: true,
-            error: null,
+            messages: [...prev.messages, userMessage],
+            loading: true,
+            error: null
         }));
 
-        try {
-            // Send to background script for processing
-            const request: FollowUpRequest = {
-                originalText: chatState.originalText,
-                question: newMessage.content,
-                conversationHistory: chatState.messages,
-            };
+        // Create the request for our background script
+        const request: FollowUpRequest = {
+            originalText: chatState.originalText,
+            question: message,
+            conversationHistory: chatState.messages
+        };
 
-            chrome.runtime.sendMessage(
-                {
-                    type: MessageType.FOLLOW_UP_QUESTION,
-                    payload: request,
-                },
-                (response: ExplanationResult) => {
-                    if (chrome.runtime.lastError) {
-                        console.error('Error sending message:', chrome.runtime.lastError);
-                        setChatState((prev) => ({
-                            ...prev,
-                            isLoading: false,
-                            error: 'Error communicating with the extension.',
-                        }));
-                        return;
-                    }
+        console.log("Sending follow-up request:", request);
 
-                    if (response.error) {
-                        setChatState((prev) => ({
-                            ...prev,
-                            isLoading: false,
-                            error: response.error || 'Unknown error',
-                        }));
-                        return;
-                    }
-
-                    // Add assistant response to chat
-                    const assistantMessage: ConversationMessage = {
-                        role: 'assistant',
-                        content: response.explanation,
-                    };
-
-                    setChatState((prev) => ({
+        // Send message to background script
+        chrome.runtime.sendMessage(
+            {
+                type: MessageType.FOLLOW_UP_QUESTION,
+                payload: request,
+            },
+            (response: ExplanationResult) => {
+                if (chrome.runtime.lastError) {
+                    console.error('Error sending message:', chrome.runtime.lastError);
+                    setChatState(prev => ({
                         ...prev,
-                        messages: [...prev.messages, assistantMessage],
-                        isLoading: false,
+                        loading: false,
+                        error: 'Error communicating with the extension.'
                     }));
+                    return;
                 }
-            );
-        } catch (error) {
-            setChatState((prev) => ({
-                ...prev,
-                isLoading: false,
-                error: `Error: ${error instanceof Error ? error.message : String(error)}`,
-            }));
-        }
-    };
 
-    // Handle input change
-    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setChatState((prev) => ({
-            ...prev,
-            inputText: e.target.value,
-        }));
-    };
+                if (response.error) {
+                    console.error('Response error:', response.error);
+                    setChatState(prev => ({
+                        ...prev,
+                        loading: false,
+                        error: response.error || 'Unknown error'
+                    }));
+                    return;
+                }
 
-    // Handle key press (Enter to send)
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSendMessage();
-        }
-    };
+                // Add assistant response to the chat
+                const assistantMessage: ConversationMessage = {
+                    role: 'assistant',
+                    content: response.explanation
+                };
 
-    // Format timestamp
-    const formatTime = () => {
-        const now = new Date();
-        return `${now.getHours().toString().padStart(2, '0')}:${now
-            .getMinutes()
-            .toString()
-            .padStart(2, '0')}`;
+                setChatState(prev => ({
+                    ...prev,
+                    messages: [...prev.messages, assistantMessage],
+                    loading: false
+                }));
+            }
+        );
     };
 
     // Open options page
@@ -220,70 +163,184 @@ const ChatPage: React.FC = () => {
         chrome.runtime.openOptionsPage();
     };
 
+    // Format the messages for display
+    const formattedMessages = chatState.messages.map(message => ({
+        id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(),
+        role: message.role,
+        content: message.content,
+    }));
+
+    const welcomeMessage = chatState.originalText
+        ? `Ask me anything about ${chatState.originalText}`
+        : "How can I help you today?";
+
     return (
-        <div className="container">
-            <div className="header">
-                <div className="logo">AI Dictionary+ Chat</div>
-                <button className="settings-button" onClick={openOptions}>
+        <div className="min-h-screen bg-background text-foreground flex flex-col">
+            <div className="flex justify-between items-center p-4 border-b">
+                <h1 className="text-xl font-semibold">AI Dictionary+ Chat</h1>
+                <button
+                    onClick={openOptions}
+                    className="text-primary hover:underline"
+                >
                     Settings
                 </button>
             </div>
 
-            <div className="chat-container" ref={chatContainerRef}>
-                {chatState.messages.length === 0 ? (
-                    <div className="empty-state">Start your conversation...</div>
-                ) : (
-                    chatState.messages.map((message, index) => (
-                        <div
-                            key={index}
-                            className={`message ${message.role === 'user' ? 'user-message' : 'assistant-message'
-                                }`}
-                        >
-                            <div
-                                className="message-content"
-                                dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }}
-                            />
-                            <div className="message-time">{formatTime()}</div>
-                        </div>
-                    ))
-                )}
+            <div className="flex-1">
+                <ChatThread
+                    welcomeMessage={welcomeMessage}
+                    messages={formattedMessages}
+                    showWelcome={chatState.messages.length === 0}
+                    onSendMessage={handleSendMessage}
+                    loading={chatState.loading}
+                />
 
-                {chatState.isLoading && (
-                    <div className="loading">
-                        <div className="spinner"></div>
-                        <span>AI is thinking...</span>
+                {chatState.error && (
+                    <div className="p-4 mx-4 mb-4 bg-destructive/10 text-destructive rounded-md">
+                        {chatState.error}
                     </div>
                 )}
-
-                {chatState.error && <div className="error">{chatState.error}</div>}
-            </div>
-
-            <div className="input-container">
-                <textarea
-                    id="inputField"
-                    className="input-field"
-                    placeholder="Type your message here..."
-                    value={chatState.inputText}
-                    onChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                    disabled={chatState.isLoading}
-                ></textarea>
-                <button
-                    className="send-button"
-                    onClick={handleSendMessage}
-                    disabled={!chatState.inputText.trim() || chatState.isLoading}
-                >
-                    Send
-                </button>
             </div>
         </div>
     );
 };
 
-// Render the React component
-const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
-root.render(
-    <React.StrictMode>
-        <ChatPage />
-    </React.StrictMode>
-); 
+// Custom chat thread component with simplified messaging
+interface ChatThreadProps {
+    welcomeMessage: string;
+    messages: Array<{
+        id: string;
+        role: string;
+        content: string;
+    }>;
+    showWelcome: boolean;
+    onSendMessage: (message: string) => void;
+    loading: boolean;
+}
+
+const ChatThread: React.FC<ChatThreadProps> = ({
+    welcomeMessage,
+    messages,
+    showWelcome,
+    onSendMessage,
+    loading
+}) => {
+    const [inputValue, setInputValue] = useState('');
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // Scroll to bottom when messages change
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (inputValue.trim() && !loading) {
+            onSendMessage(inputValue.trim());
+            setInputValue('');
+        }
+    };
+
+    return (
+        <div className="h-full flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col items-center overflow-y-auto px-4 pt-8">
+                {showWelcome && (
+                    <div className="flex w-full max-w-4xl flex-grow flex-col">
+                        <div className="flex w-full flex-grow flex-col items-center justify-center">
+                            <p className="mt-4 font-medium">{welcomeMessage}</p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Render messages */}
+                {messages.map((message) => (
+                    <div
+                        key={message.id}
+                        className="w-full max-w-4xl py-4"
+                    >
+                        <div className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div
+                                className={
+                                    message.role === 'user'
+                                        ? "bg-primary text-primary-foreground max-w-[80%] break-words rounded-xl px-5 py-2.5"
+                                        : "bg-muted text-foreground max-w-[80%] break-words rounded-xl px-5 py-2.5 markdown-content"
+                                }
+                            >
+                                {message.role === 'user' ? (
+                                    message.content
+                                ) : (
+                                    <div dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }} />
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                ))}
+
+                {/* Loading indicator */}
+                {loading && (
+                    <div className="w-full max-w-4xl py-4">
+                        <div className="flex justify-start">
+                            <div className="bg-muted text-foreground max-w-[80%] break-words rounded-xl px-5 py-2.5">
+                                <div className="flex items-center space-x-2">
+                                    <div className="h-3 w-3 animate-bounce rounded-full bg-primary"></div>
+                                    <div className="h-3 w-3 animate-bounce rounded-full bg-primary" style={{ animationDelay: '0.2s' }}></div>
+                                    <div className="h-3 w-3 animate-bounce rounded-full bg-primary" style={{ animationDelay: '0.4s' }}></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Invisible div for scrolling to bottom */}
+                <div ref={messagesEndRef} />
+            </div>
+
+            {/* Message input form */}
+            <div className="sticky bottom-0 mt-3 px-4 pb-4">
+                <form
+                    className="flex w-full max-w-4xl mx-auto flex-wrap items-end rounded-lg border bg-background px-3 shadow-sm transition-colors ease-in"
+                    onSubmit={handleSubmit}
+                >
+                    <input
+                        autoFocus
+                        placeholder="Type your message..."
+                        className="placeholder:text-muted-foreground max-h-40 flex-grow resize-none border-none bg-transparent px-2 py-4 text-sm outline-none focus:ring-0 disabled:cursor-not-allowed"
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSubmit(e);
+                            }
+                        }}
+                        disabled={loading}
+                    />
+
+                    {loading ? (
+                        <div className="my-2.5 flex items-center justify-center px-2">
+                            <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-primary"></div>
+                        </div>
+                    ) : (
+                        <button
+                            type="submit"
+                            className="my-2.5 p-2 rounded-md text-primary hover:text-primary/80 transition-colors"
+                            disabled={inputValue.trim() === '' || loading}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+                            </svg>
+                        </button>
+                    )}
+                </form>
+            </div>
+        </div>
+    );
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    const rootElement = document.getElementById('root');
+    if (rootElement) {
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(<ChatPage />);
+    }
+}); 
