@@ -33,6 +33,10 @@
     --ring: 222.2 84% 4.9%;
 
     --radius: 0.5rem;
+
+    /* Multimedia tooltip colors */
+    --multimedia-accent: 262 83% 58%; /* Purple for multimedia features */
+    --multimedia-accent-light: 262 83% 85%;
   }
 
   .dark {
@@ -63,6 +67,10 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
+
+    /* Dark mode multimedia tooltip colors */
+    --multimedia-accent: 262 83% 65%;
+    --multimedia-accent-light: 262 73% 25%;
   }
 }
 
@@ -72,10 +80,84 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
-/* Markdown Styling */
+/* Multimedia tooltip styles */
+.ai-dictionary-tooltip[data-media-type] .ai-dictionary-header {
+  background-color: hsl(var(--multimedia-accent));
+  color: white;
+}
+
+.dark .ai-dictionary-tooltip[data-media-type] .ai-dictionary-header {
+  background-color: hsl(var(--multimedia-accent));
+  color: white;
+}
+
+.ai-dictionary-regenerate {
+  background-color: hsl(var(--multimedia-accent));
+  color: white;
+  border-color: hsl(var(--multimedia-accent));
+}
+
+.ai-dictionary-regenerate:hover {
+  background-color: hsl(var(--multimedia-accent-light));
+}
+
+.dark .ai-dictionary-regenerate {
+  background-color: hsl(var(--multimedia-accent));
+  color: white;
+  border-color: hsl(var(--multimedia-accent));
+}
+
+.dark .ai-dictionary-regenerate:hover {
+  background-color: hsl(var(--multimedia-accent-light));
+}
+
+/* Options page styles for multimedia content */
+#multimodalEnabled:checked + span {
+  background-color: hsl(var(--multimedia-accent));
+}
+
+/* Enhanced tooltip positioning for media elements */
+.ai-dictionary-tooltip[data-media-type="image"],
+.ai-dictionary-tooltip[data-media-type="video"],
+.ai-dictionary-tooltip[data-media-type="audio"] {
+  max-width: 350px; /* Match text tooltip width */
+  width: auto; /* Allow it to size naturally like text tooltips */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Match text tooltip shadow */
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Optional - remove the footer styling if not needed */
+.ai-dictionary-footer {
+  font-size: 12px;
+  color: #888;
+  text-align: center;
+  padding: 8px 0;
+  border-top: 1px solid #eaeaea;
+}
+
+.dark-theme .ai-dictionary-footer {
+  color: #aaa;
+  border-top: 1px solid #3d3d41;
+}
+
+/* Markdown content styles (existing) */
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
 .markdown-content h1,
 .ai-dictionary-markdown h1 {
   font-size: 1.5rem;

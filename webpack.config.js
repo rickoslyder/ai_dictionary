@@ -10,6 +10,7 @@ module.exports = {
     background: "./src/background/index.ts",
     content: "./src/content/index.ts",
     chat: "./src/chat/index.tsx",
+    history: "./src/history/index.tsx",
   },
   output: {
     path: path.resolve(__dirname, "dist"),
@@ -51,6 +52,11 @@ module.exports = {
       template: "./src/chat/index.html",
       filename: "chat.html",
       chunks: ["chat"],
+    }),
+    new HtmlWebpackPlugin({
+      template: "./src/history/index.html",
+      filename: "history.html",
+      chunks: ["history"],
     }),
   ],
   resolve: {

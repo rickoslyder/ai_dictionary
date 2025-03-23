@@ -20,7 +20,7 @@
         color: #f5f5f7;
       }
 
-      .container {
+      .options-container {
         max-width: 600px;
         margin: 0 auto;
         background-color: #fff;
@@ -29,7 +29,7 @@
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
       }
 
-      .dark-theme .container {
+      .dark-theme .options-container {
         background-color: #2c2c2e;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
       }
@@ -40,7 +40,23 @@
         margin-bottom: 20px;
       }
 
-      .form-group {
+      h2 {
+        margin-top: 20px;
+        font-size: 18px;
+        margin-bottom: 15px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #e0e0e0;
+      }
+
+      .dark-theme h2 {
+        border-bottom: 1px solid #3d3d41;
+      }
+
+      .settings-group {
+        margin-bottom: 30px;
+      }
+
+      .input-group {
         margin-bottom: 20px;
       }
 
@@ -50,27 +66,108 @@
         margin-bottom: 8px;
       }
 
+      .checkbox-group label {
+        display: flex;
+        align-items: center;
+        font-weight: 400;
+      }
+
+      .checkbox-group input[type="checkbox"] {
+        margin-right: 10px;
+      }
+
+      .help-text {
+        margin-top: 6px;
+        font-size: 13px;
+        color: #666;
+      }
+
+      .dark-theme .help-text {
+        color: #a1a1a6;
+      }
+
+      .multimedia-feature {
+        background-color: rgba(140, 82, 255, 0.1);
+        border-left: 3px solid #8c52ff;
+        padding: 12px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+      }
+
+      .dark-theme .multimedia-feature {
+        background-color: rgba(140, 82, 255, 0.15);
+      }
+
+      .multimedia-badge {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        background-color: #8c52ff;
+        color: white;
+        margin-left: 8px;
+        vertical-align: middle;
+      }
+
       input[type="text"],
+      input[type="password"],
       input[type="number"],
       select {
         width: 100%;
         padding: 10px;
-        border: 1px solid #ddd;
+        border: 1px solid #ccc;
         border-radius: 4px;
         font-size: 14px;
         box-sizing: border-box;
       }
 
       .dark-theme input[type="text"],
+      .dark-theme input[type="password"],
       .dark-theme input[type="number"],
       .dark-theme select {
         background-color: #3d3d41;
-        border: 1px solid #4d4d4f;
+        border-color: #4d4d4f;
         color: #f5f5f7;
       }
 
-      button {
-        padding: 10px 16px;
+      .shortcut-container {
+        display: flex;
+        gap: 8px;
+      }
+
+      .shortcut-container input {
+        flex: 1;
+      }
+
+      .record-button {
+        padding: 10px 15px;
+        background-color: #f1f3f4;
+        border: none;
+        border-radius: 4px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+
+      .dark-theme .record-button {
+        background-color: #3d3d41;
+        color: #f5f5f7;
+      }
+
+      .record-button:hover {
+        background-color: #e8eaed;
+      }
+
+      .dark-theme .record-button:hover {
+        background-color: #4d4d4f;
+      }
+
+      .button-group {
+        margin-top: 30px;
+      }
+
+      .save-button {
+        padding: 10px 20px;
         background-color: #4285f4;
         color: white;
         border: none;
@@ -80,104 +177,35 @@
         cursor: pointer;
       }
 
-      button:hover {
+      .save-button:hover {
         background-color: #3367d6;
       }
 
-      .status {
+      .status-message {
         margin-top: 20px;
         padding: 10px;
         border-radius: 4px;
+        font-size: 14px;
       }
 
-      .status.success {
+      .status-message.success {
         background-color: #e6f4ea;
         color: #137333;
       }
 
-      .dark-theme .status.success {
-        background-color: #0f5323;
-        color: #e6f4ea;
-      }
-
-      .status.error {
+      .status-message.error {
         background-color: #fce8e6;
         color: #c5221f;
       }
 
-      .dark-theme .status.error {
-        background-color: #8c1d18;
-        color: #fce8e6;
+      .dark-theme .status-message.success {
+        background-color: rgba(19, 115, 51, 0.2);
+        color: #81c995;
       }
 
-      .description {
-        font-size: 14px;
-        color: #666;
-        margin-top: 5px;
-      }
-
-      .dark-theme .description {
-        color: #a1a1a6;
-      }
-
-      .checkbox-group {
-        margin-top: 10px;
-      }
-
-      .checkbox-label {
-        display: flex;
-        align-items: center;
-        font-weight: normal;
-      }
-
-      input[type="checkbox"] {
-        margin-right: 8px;
-      }
-
-      /* Shortcut container */
-      .shortcut-container {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-
-      /* Shortcut input is smaller and readonly */
-      #keyboardShortcut {
-        width: 70%;
-        font-family: monospace;
-        text-align: center;
-        font-weight: 600;
-        background-color: #f5f5f7;
-      }
-
-      .dark-theme #keyboardShortcut {
-        background-color: #3d3d41;
-      }
-
-      /* Record shortcut button */
-      .shortcut-button {
-        flex: 1;
-        background-color: #f1f3f4;
-        color: #3c4043;
-        padding: 10px;
-        border-radius: 4px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .shortcut-button:hover {
-        background-color: #e8eaed;
-      }
-
-      .dark-theme .shortcut-button {
-        background-color: #3d3d41;
-        color: #f5f5f7;
-      }
-
-      .dark-theme .shortcut-button:hover {
-        background-color: #4d4d4f;
+      .dark-theme .status-message.error {
+        background-color: rgba(197, 34, 31, 0.2);
+        color: #f28b82;
       }
     </style>
   </head>

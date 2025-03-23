@@ -136,47 +136,79 @@ const OptionsPage: React.FC = () => {
     };
 
     return (
-        <div className="container">
-            <h1>AI Dictionary+ Options</h1>
-            <form id="optionsForm" onSubmit={handleSubmit}>
-                <div className="form-group">
-                    <label htmlFor="apiKey">Gemini API Key</label>
-                    <input
-                        type="text"
-                        id="apiKey"
-                        name="apiKey"
-                        value={settings.apiKey}
-                        onChange={handleInputChange}
-                        placeholder="Enter your API key"
-                    />
-                    <div className="description">
-                        You can get your API key from{' '}
-                        <a href="https://ai.google.dev/" target="_blank" rel="noreferrer">
-                            Google AI Studio
-                        </a>
-                        .
+        <div className="options-container">
+            <h1>AI Dictionary+ Settings</h1>
+
+            <form onSubmit={handleSubmit}>
+                <div className="settings-group">
+                    <h2>API Configuration</h2>
+                    <div className="input-group">
+                        <label htmlFor="apiKey">Gemini API Key:</label>
+                        <input
+                            type="password"
+                            id="apiKey"
+                            name="apiKey"
+                            value={settings.apiKey}
+                            onChange={handleInputChange}
+                            placeholder="Enter your Gemini API key"
+                        />
+                        <p className="help-text">
+                            Get your API key from{' '}
+                            <a
+                                href="https://aistudio.google.com/app/apikey"
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                Google AI Studio
+                            </a>
+                        </p>
+                    </div>
+
+                    <div className="input-group">
+                        <label htmlFor="perplexityApiKey">Perplexity API Key (for web search):</label>
+                        <input
+                            type="password"
+                            id="perplexityApiKey"
+                            name="perplexityApiKey"
+                            value={settings.perplexityApiKey}
+                            onChange={handleInputChange}
+                            placeholder="Enter your Perplexity API key (optional)"
+                        />
+                        <p className="help-text">
+                            Get your API key from{' '}
+                            <a
+                                href="https://docs.perplexity.ai/docs/getting-started"
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                Perplexity AI
+                            </a>
+                        </p>
                     </div>
                 </div>
 
-                <div className="form-group">
-                    <label htmlFor="perplexityApiKey">Perplexity API Key (for Web Search)</label>
-                    <input
-                        type="text"
-                        id="perplexityApiKey"
-                        name="perplexityApiKey"
-                        value={settings.perplexityApiKey}
-                        onChange={handleInputChange}
-                        placeholder="Enter your Perplexity API key"
-                    />
-                    <div className="description">
-                        Get your Perplexity API key from{' '}
-                        <a href="https://docs.perplexity.ai/docs/getting-started" target="_blank" rel="noreferrer">
-                            Perplexity AI
-                        </a>
-                        .
+                <div className="settings-group">
+                    <h2>Appearance</h2>
+                    <div className="input-group">
+                        <label htmlFor="theme">Theme:</label>
+                        <select
+                            id="theme"
+                            name="theme"
+                            value={settings.theme}
+                            onChange={handleInputChange}
+                        >
+                            <option value="light">Light</option>
+                            <option value="dark">Dark</option>
+                            <option value="auto">Auto (follow system)</option>
+                        </select>
                     </div>
-                    <div className="checkbox-group">
-                        <label className="checkbox-label">
+                </div>
+
+                <div className="settings-group">
+                    <h2>Features</h2>
+
+                    <div className="input-group checkbox-group">
+                        <label htmlFor="webSearchEnabled">
                             <input
                                 type="checkbox"
                                 id="webSearchEnabled"
@@ -184,59 +216,36 @@ const OptionsPage: React.FC = () => {
                                 checked={settings.webSearchEnabled}
                                 onChange={handleInputChange}
                             />
-                            Enable web search for enhanced explanations
+                            Enable web search
                         </label>
+                        <p className="help-text">
+                            Allow AI Dictionary+ to search the web for up-to-date information
+                            (requires Perplexity API key)
+                        </p>
                     </div>
-                </div>
 
-                <div className="form-group">
-                    <label htmlFor="theme">Theme</label>
-                    <select
-                        id="theme"
-                        name="theme"
-                        value={settings.theme}
-                        onChange={handleInputChange}
-                    >
-                        <option value="light">Light</option>
-                        <option value="dark">Dark</option>
-                        <option value="auto">Auto (match system)</option>
-                    </select>
-                </div>
-
-                <div className="form-group">
-                    <label htmlFor="maxTokens">Max Tokens</label>
-                    <input
-                        type="number"
-                        id="maxTokens"
-                        name="maxTokens"
-                        value={settings.maxTokens}
-                        onChange={handleInputChange}
-                        min="100"
-                        max="4000"
-                        step="100"
-                    />
-                    <div className="description">
-                        Maximum number of tokens for AI responses (100-4000). Higher values allow for longer, more detailed responses but may take longer to generate.
+                    <div className="multimedia-feature">
+                        <div className="input-group checkbox-group">
+                            <label htmlFor="multimodalEnabled">
+                                <input
+                                    type="checkbox"
+                                    id="multimodalEnabled"
+                                    name="multimodalEnabled"
+                                    checked={settings.multimodalEnabled}
+                                    onChange={handleInputChange}
+                                />
+                                Enable multimedia content analysis
+                                <span className="multimedia-badge">NEW</span>
+                            </label>
+                            <p className="help-text">
+                                Allow AI Dictionary+ to analyze images, videos, audio, and documents using Gemini's multimodal capabilities.
+                                Right-click on media elements to access these features.
+                            </p>
+                        </div>
                     </div>
-                </div>
 
-                <div className="form-group">
-                    <label htmlFor="cacheExpiry">Cache Expiry (hours)</label>
-                    <input
-                        type="number"
-                        id="cacheExpiry"
-                        name="cacheExpiry"
-                        value={settings.cacheExpiry}
-                        onChange={handleInputChange}
-                        min="1"
-                        max="168"
-                        step="1"
-                    />
-                    <div className="description">
-                        How long to cache responses (1-168 hours).
-                    </div>
-                    <div className="checkbox-group">
-                        <label className="checkbox-label">
+                    <div className="input-group checkbox-group">
+                        <label htmlFor="cacheEnabled">
                             <input
                                 type="checkbox"
                                 id="cacheEnabled"
@@ -244,39 +253,83 @@ const OptionsPage: React.FC = () => {
                                 checked={settings.cacheEnabled}
                                 onChange={handleInputChange}
                             />
-                            Enable caching of responses
+                            Enable response caching
                         </label>
+                        <p className="help-text">
+                            Cache responses to reduce API calls for repeated queries
+                        </p>
                     </div>
-                </div>
 
-                <div className="form-group">
-                    <label htmlFor="keyboardShortcut">Keyboard Shortcut</label>
-                    <div className="shortcut-container">
+                    <div className="input-group">
+                        <label htmlFor="cacheExpiry">Cache expiry (hours):</label>
                         <input
-                            type="text"
-                            id="keyboardShortcut"
-                            ref={shortcutInputRef}
-                            value={formatShortcut()}
-                            onKeyDown={handleShortcutKeyDown}
-                            readOnly
+                            type="number"
+                            id="cacheExpiry"
+                            name="cacheExpiry"
+                            min="1"
+                            max="168"
+                            value={settings.cacheExpiry}
+                            onChange={handleInputChange}
+                            disabled={!settings.cacheEnabled}
                         />
-                        <button
-                            type="button"
-                            className="shortcut-button"
-                            onClick={startRecordingShortcut}
-                        >
-                            {recordingShortcut ? 'Press keys...' : 'Record Shortcut'}
-                        </button>
                     </div>
-                    <div className="description">
-                        Keyboard shortcut to activate AI Dictionary+ on text selection. Default is ⌘ + ⇧ + E.
+
+                    <div className="input-group">
+                        <label htmlFor="maxTokens">Maximum response tokens:</label>
+                        <input
+                            type="number"
+                            id="maxTokens"
+                            name="maxTokens"
+                            min="100"
+                            max="4000"
+                            value={settings.maxTokens}
+                            onChange={handleInputChange}
+                        />
+                        <p className="help-text">
+                            Limit the length of AI responses (100-4000). Higher values provide more detailed responses but use more API tokens.
+                        </p>
                     </div>
                 </div>
 
-                <button type="submit">Save Options</button>
+                <div className="settings-group">
+                    <h2>Keyboard Shortcut</h2>
+                    <div className="input-group">
+                        <label htmlFor="keyboardShortcut">Shortcut key combination:</label>
+                        <div className="shortcut-container">
+                            <input
+                                type="text"
+                                id="keyboardShortcut"
+                                ref={shortcutInputRef}
+                                value={formatShortcut()}
+                                onKeyDown={handleShortcutKeyDown}
+                                readOnly
+                                placeholder="Click to record shortcut"
+                                onClick={startRecordingShortcut}
+                            />
+                            <button
+                                type="button"
+                                className="record-button"
+                                onClick={startRecordingShortcut}
+                            >
+                                {recordingShortcut ? 'Recording...' : 'Record'}
+                            </button>
+                        </div>
+                        <p className="help-text">
+                            {recordingShortcut
+                                ? 'Press the key combination you want to use'
+                                : 'Click to set a keyboard shortcut for quick explanations'}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="button-group">
+                    <button type="submit" className="save-button">
+                        Save Settings
+                    </button>
+                </div>
 
                 {status && (
-                    <div className={`status ${status.type}`}>
+                    <div className={`status-message ${status.type}`}>
                         {status.message}
                     </div>
                 )}

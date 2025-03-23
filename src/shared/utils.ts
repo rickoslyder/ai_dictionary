@@ -1,5 +1,12 @@
 /// <reference types="chrome" />
-import { CacheItem, Settings, DEFAULT_SETTINGS } from "./types";
+import {
+  CacheItem,
+  Settings,
+  DEFAULT_SETTINGS,
+  HistoryLog,
+  HistoryLogEntry,
+} from "./types";
+import { addHistoryEntry, getHistoryEntry, clearOldHistoryEntries } from "./db";
 
 // Get current system theme (light or dark)
 export const getSystemTheme = (): "light" | "dark" => {
@@ -52,34 +59,113 @@ export const saveSettings = async (settings: Settings): Promise<void> => {
   });
 };
 
-// Set an item in the cache
+// History log functions
+export const HISTORY_LOG_KEY = "explanation_history";
+
+// Get the history log
+export const getHistoryLog = async (): Promise<HistoryLog> => {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(HISTORY_LOG_KEY, (result) => {
+      const historyLog = result[HISTORY_LOG_KEY] as HistoryLog;
+      if (!historyLog) {
+        // Initialize empty history log if it doesn't exist
+        const emptyLog: HistoryLog = {
+          entries: [],
+          lastUpdated: Date.now(),
+        };
+        resolve(emptyLog);
+      } else {
+        resolve(historyLog);
+      }
+    });
+  });
+};
+
+// Add an entry to the history log
+export const addHistoryLogEntry = async (
+  entry: Omit<HistoryLogEntry, "id" | "timestamp">
+): Promise<string> => {
+  // Generate a unique ID
+  const id = `hist_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  // Create the full entry
+  const fullEntry: HistoryLogEntry = {
+    ...entry,
+    id,
+    timestamp: Date.now(),
+  };
+
+  // Add to IndexedDB
+  await addHistoryEntry(fullEntry);
+
+  return id;
+};
+
+// Get a history log entry by ID
+export const getHistoryLogEntry = async (
+  id: string
+): Promise<HistoryLogEntry | null> => {
+  return getHistoryEntry(id);
+};
+
+// Clear entries based on retention settings
+export const cleanupHistoryEntries = async (
+  settings: Settings
+): Promise<void> => {
+  // If retention is set to 'forever', don't clean up
+  if (settings.historyRetention === "forever") {
+    return;
+  }
+
+  // Calculate cutoff time based on retention days
+  const cutoffTime =
+    Date.now() - settings.historyRetention * 24 * 60 * 60 * 1000;
+
+  // Clear old entries
+  await clearOldHistoryEntries(cutoffTime);
+};
+
+// Set an item in the cache with history log reference
 export const setCacheItem = async <T>(
   key: string,
   data: T,
-  expiryHours: number
+  expiryHours: number,
+  historyLogId?: string
 ): Promise<void> => {
   const cacheItem: CacheItem<T> = {
     data,
     timestamp: Date.now() + expiryHours * 60 * 60 * 1000,
+    historyLogId,
   };
 
   await chrome.storage.local.set({ [key]: cacheItem });
 };
 
-// Get an item from the cache
-export const getCacheItem = async <T>(key: string): Promise<T | null> => {
+// Get an item from the cache and its history log entry if available
+export const getCacheItem = async <T>(
+  key: string
+): Promise<{ data: T | null; historyEntry: HistoryLogEntry | null }> => {
   return new Promise((resolve) => {
-    chrome.storage.local.get(key, (result: Record<string, CacheItem<T>>) => {
-      const cacheItem = result[key];
+    chrome.storage.local.get(
+      key,
+      async (result: Record<string, CacheItem<T>>) => {
+        const cacheItem = result[key];
 
-      // If no cache or expired
-      if (!cacheItem || Date.now() > cacheItem.timestamp) {
-        resolve(null);
-        return;
+        // If no cache or expired
+        if (!cacheItem || Date.now() > cacheItem.timestamp) {
+          resolve({ data: null, historyEntry: null });
+          return;
+        }
+
+        // Get history entry if available
+        let historyEntry = null;
+        if (cacheItem.historyLogId) {
+          historyEntry = await getHistoryLogEntry(cacheItem.historyLogId);
+        }
+
+        resolve({ data: cacheItem.data, historyEntry });
       }
-
-      resolve(cacheItem.data);
-    });
+    );
   });
 };
 

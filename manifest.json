@@ -36,7 +36,7 @@
   "options_page": "options.html",
   "web_accessible_resources": [
     {
-      "resources": ["chat.html", "icons/*"],
+      "resources": ["chat.html", "history.html", "icons/*"],
       "matches": ["<all_urls>"]
     }
   ]

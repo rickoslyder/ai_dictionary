@@ -87,4 +87,14 @@ function setupEventListeners() {
             }
         });
     }
+
+    // History button
+    const historyBtn = document.getElementById('historyBtn');
+    if (historyBtn) {
+        historyBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const historyUrl = chrome.runtime.getURL('history.html');
+            chrome.tabs.create({ url: historyUrl });
+        });
+    }
 } 

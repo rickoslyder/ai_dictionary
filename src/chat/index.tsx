@@ -167,7 +167,11 @@ const ChatPage: React.FC = () => {
     const formattedMessages = chatState.messages.map(message => ({
         id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(),
         role: message.role,
-        content: message.content,
+        content: typeof message.content === 'string'
+            ? message.content
+            : Array.isArray(message.content)
+                ? message.content.map(part => part.type === 'text' ? part.text || '' : '[Media Content]').join(' ')
+                : JSON.stringify(message.content),
     }));
 
     const welcomeMessage = chatState.originalText

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Dictionary+ History</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 20px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+      }
+
+      .history-page {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      .history-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #eaeaea;
+      }
+
+      .dark-theme .history-header {
+        border-bottom-color: #3d3d41;
+      }
+
+      .history-header h1 {
+        margin: 0;
+        font-size: 24px;
+        color: #333;
+      }
+
+      .dark-theme .history-header h1 {
+        color: #f5f5f7;
+      }
+
+      .history-search {
+        flex: 1;
+        max-width: 300px;
+        margin-left: 20px;
+      }
+
+      .history-search-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+
+      .dark-theme .history-search-input {
+        background-color: #1c1c1e;
+        border-color: #3d3d41;
+        color: #f5f5f7;
+      }
+
+      .history-entries {
+        display: grid;
+        gap: 20px;
+      }
+
+      .history-entry {
+        padding: 16px;
+        border: 1px solid #eaeaea;
+        border-radius: 8px;
+        background-color: #fff;
+      }
+
+      .dark-theme .history-entry {
+        background-color: #2c2c2e;
+        border-color: #3d3d41;
+      }
+
+      .history-entry-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        font-size: 14px;
+        color: #666;
+      }
+
+      .dark-theme .history-entry-header {
+        color: #98989d;
+      }
+
+      .history-entry-url {
+        color: #007aff;
+        text-decoration: none;
+      }
+
+      .dark-theme .history-entry-url {
+        color: #0a84ff;
+      }
+
+      .history-entry-text {
+        margin-bottom: 12px;
+        padding: 8px;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+      }
+
+      .dark-theme .history-entry-text {
+        background-color: #3c4043;
+      }
+
+      .history-entry-explanation {
+        margin-bottom: 12px;
+        line-height: 1.5;
+      }
+
+      .history-entry-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      .history-entry-actions button {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 4px;
+        background-color: #007aff;
+        color: white;
+        font-size: 14px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      .history-entry-actions button:hover {
+        background-color: #0056b3;
+      }
+
+      .dark-theme .history-entry-actions button {
+        background-color: #0a84ff;
+      }
+
+      .dark-theme .history-entry-actions button:hover {
+        background-color: #0056b3;
+      }
+
+      .history-loading {
+        text-align: center;
+        padding: 20px;
+        color: #666;
+      }
+
+      .dark-theme .history-loading {
+        color: #98989d;
+      }
+
+      .history-error {
+        padding: 12px;
+        margin: 20px 0;
+        background-color: rgba(255, 59, 48, 0.1);
+        border-radius: 4px;
+        color: #ff3b30;
+      }
+
+      .dark-theme .history-error {
+        background-color: rgba(255, 69, 58, 0.1);
+        color: #ff453a;
+      }
+
+      .history-empty {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+        font-style: italic;
+      }
+
+      .dark-theme .history-empty {
+        color: #98989d;
+      }
+
+      /* Markdown content styles */
+      .markdown-content {
+        line-height: 1.6;
+      }
+
+      .markdown-content code {
+        background-color: #f1f3f4;
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-family: monospace;
+      }
+
+      .dark-theme .markdown-content code {
+        background-color: #3c4043;
+      }
+
+      .markdown-content pre {
+        background-color: #f8f9fa;
+        padding: 12px;
+        border-radius: 4px;
+        overflow-x: auto;
+      }
+
+      .dark-theme .markdown-content pre {
+        background-color: #2c2c2e;
+      }
+
+      .markdown-content blockquote {
+        border-left: 4px solid #ddd;
+        margin: 0;
+        padding-left: 16px;
+        color: #666;
+      }
+
+      .dark-theme .markdown-content blockquote {
+        border-left-color: #3d3d41;
+        color: #98989d;
+      }
+
+      .history-entry-conversation {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .history-entry-follow-ups {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #eaeaea;
+      }
+
+      .dark-theme .history-entry-follow-ups {
+        border-top-color: #3d3d41;
+      }
+
+      .history-message {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 12px;
+        max-width: 85%;
+      }
+
+      .user-message {
+        align-self: flex-end;
+      }
+
+      .assistant-message {
+        align-self: flex-start;
+      }
+
+      .history-message-content {
+        padding: 12px;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      }
+
+      .dark-theme .history-message-content {
+        background-color: #3c4043;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      }
+
+      .user-message .history-message-content {
+        background-color: #007aff;
+        color: white;
+      }
+
+      .dark-theme .user-message .history-message-content {
+        background-color: #0a84ff;
+      }
+
+      .user-message .history-message-content code {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white;
+      }
+
+      .dark-theme .user-message .history-message-content code {
+        background-color: rgba(0, 0, 0, 0.2);
+      }
+
+      .user-message .history-message-content pre {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white;
+      }
+
+      .dark-theme .user-message .history-message-content pre {
+        background-color: rgba(0, 0, 0, 0.2);
+      }
+
+      .user-message .history-message-content blockquote {
+        border-left-color: rgba(255, 255, 255, 0.3);
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      .dark-theme .user-message .history-message-content blockquote {
+        border-left-color: rgba(255, 255, 255, 0.2);
+      }
+    </style>
+  <script defer src="history.js"></script></head>
+  <body>
+    <div id="app"></div>
+  </body>
+</html>
